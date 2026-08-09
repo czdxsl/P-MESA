@@ -10,4 +10,4 @@ data/
 checkpoints/
 outputs/
 !outputs/.gitkeep
-
+tmp/

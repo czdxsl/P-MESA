@@ -26,8 +26,13 @@ def low_evidence_image(image: torch.Tensor, *, downsample_factor: int = 16, blur
         channels = x.shape[1]
         horizontal = kernel.view(1, 1, 1, -1).repeat(channels, 1, 1, 1)
         vertical = kernel.view(1, 1, -1, 1).repeat(channels, 1, 1, 1)
-        restored = F.conv2d(restored, horizontal, padding=(0, blur_kernel // 2), groups=channels)
-        restored = F.conv2d(restored, vertical, padding=(blur_kernel // 2, 0), groups=channels)
+        pad = blur_kernel // 2
+        horizontal_mode = "reflect" if pad < restored.shape[-1] else "replicate"
+        vertical_mode = "reflect" if pad < restored.shape[-2] else "replicate"
+        restored = F.pad(restored, (pad, pad, 0, 0), mode=horizontal_mode)
+        restored = F.conv2d(restored, horizontal, groups=channels)
+        restored = F.pad(restored, (0, 0, pad, pad), mode=vertical_mode)
+        restored = F.conv2d(restored, vertical, groups=channels)
     return restored.squeeze(0) if squeeze else restored
 
 
@@ -42,4 +47,3 @@ def restore_regions(baseline: torch.Tensor, original: torch.Tensor, masks: torch
     gates = gates.to(device=original.device, dtype=original.dtype)
     alpha = 1.0 - torch.prod(1.0 - masks * gates.view(-1, 1, 1), dim=0)
     return baseline * (1.0 - alpha) + original * alpha
-

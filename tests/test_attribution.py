@@ -33,3 +33,9 @@ def test_nonlinear_score_is_complete_to_midpoint_accuracy():
     result = path_integrated_gradients(lambda z: (z.square()).sum() + z[0] * z[1], paths)
     assert result.completeness_error.abs().max() < 2e-4
 
+
+def test_explicit_cpu_device_is_supported():
+    weights = torch.tensor([0.2, 0.7, 1.3, 0.4])
+    paths = generate_paths(units(), steps=20, count=2, seed=1)
+    result = path_integrated_gradients(lambda z: torch.dot(weights, z), paths, device="cpu")
+    assert result.per_path.device.type == "cpu"

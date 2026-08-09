@@ -50,5 +50,10 @@ def run_dataset(
         ))
     path = Path(output)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(json.dumps(asdict(r), sort_keys=True) for r in records) + "\n", encoding="utf-8")
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        "\n".join(json.dumps(asdict(r), sort_keys=True) for r in records) + ("\n" if records else ""),
+        encoding="utf-8",
+    )
+    temporary.replace(path)
     return records

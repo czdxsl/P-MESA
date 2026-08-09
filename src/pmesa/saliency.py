@@ -65,5 +65,4 @@ def interaction_saliency(text: torch.Tensor, visual: torch.Tensor, compatibility
     return torch.stack([
         text[int(row[0].item())] * visual[int(row[1].item())] * row[2]
         for row in compatibility
-    ])
-
+    ]).abs()

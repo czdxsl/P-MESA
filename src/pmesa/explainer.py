@@ -42,12 +42,14 @@ class PMESAExplainer:
         budget: int = 5,
         weights: ObjectiveWeights = ObjectiveWeights(),
         seed: int = 0,
+        device: str | torch.device | None = None,
     ) -> None:
         self.steps = steps
         self.path_count = path_count
         self.budget = budget
         self.weights = weights
         self.seed = seed
+        self.device = torch.device(device) if device is not None else None
 
     def explain(
         self,
@@ -62,7 +64,7 @@ class PMESAExplainer:
         if saliency_array.shape != (len(units),):
             raise ValueError("saliency must contain one value per evidence unit")
         paths = generate_paths(units, steps=self.steps, count=self.path_count, seed=self.seed)
-        attribution = path_integrated_gradients(score, paths)
+        attribution = path_integrated_gradients(score, paths, device=self.device)
         objective = SubsetObjective(
             units,
             attribution.contribution.cpu().numpy(),
@@ -72,4 +74,3 @@ class PMESAExplainer:
         )
         selected = greedy_select(objective, self.budget)
         return Explanation(units, selected, saliency_array, attribution)
-

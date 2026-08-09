@@ -18,6 +18,8 @@ def auc(scores: Sequence[float]) -> float:
 def insertion_deletion_curves(
     score_subset: Callable[[set[int]], float], ordering: Sequence[int], universe_size: int
 ) -> tuple[list[float], list[float]]:
+    if universe_size < 0 or sorted(ordering) != list(range(universe_size)):
+        raise ValueError("ordering must be a permutation of every evidence-unit index")
     inserted: set[int] = set()
     retained = set(range(universe_size))
     insertion = [float(score_subset(inserted))]
