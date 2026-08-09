@@ -1,0 +1,48 @@
+% Generated metrics should replace \Result{...} through a separate macro file.
+% Never type experimental values directly into this source.
+\newcommand{\Result}[1]{\texttt{UNVERIFIED:#1}}
+
+\subsubsection{Visual Question Answering}
+On the official VQA-X test split (\Result{vqa_n} examples), P-MESA obtains an
+Insertion AUC of \Result{vqa_insertion_mean_std} and a Pointing Game accuracy of
+\Result{vqa_pointing_mean_std}. The compact subset retains the predicted-answer
+score with Sufficiency \Result{vqa_sufficiency_mean_std}. Figure~\ref{fig:vqa_qual}
+shows examples selected by the preregistered category-stratified policy.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{results/vqa_qualitative.pdf}
+  \caption{VQA-X qualitative comparison. All methods use identical normalization
+  and opacity. Example IDs and selection scores are listed in the supplement.}
+  \label{fig:vqa_qual}
+\end{figure*}
+
+\subsubsection{Image-Text Inconsistency Detection}
+On TIIL (\Result{tiil_n} examples), P-MESA reaches visual mIoU
+\Result{tiil_miou_mean_std} and inconsistent-span F1
+\Result{tiil_span_f1_mean_std}. The selected relation units connect the localized
+region to the conflicting phrase rather than reporting either modality alone.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{results/tiil_qualitative.pdf}
+  \caption{TIIL qualitative comparison across object, attribute, and scene
+  inconsistencies. Edited words and predicted inconsistent spans are shown
+  verbatim.}
+  \label{fig:tiil_qual}
+\end{figure*}
+
+\subsubsection{Multimodal Hallucination Analysis}
+On M-HalDetect (\Result{mhal_n} annotated spans), P-MESA obtains hallucinated-span
+F1 \Result{mhal_span_f1_mean_std} and Stability
+\Result{mhal_stability_mean_std}. Figure~\ref{fig:mhal_qual} separates unsupported
+entities, inaccurate descriptions, and incorrect relations.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{results/mhal_qualitative.pdf}
+  \caption{M-HalDetect qualitative comparison. Highlighted response spans and
+  visual support maps are raw method outputs; no prediction was manually edited.}
+  \label{fig:mhal_qual}
+\end{figure*}
+

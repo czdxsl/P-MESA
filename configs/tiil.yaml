@@ -1,0 +1,16 @@
+task: inconsistency_detection
+dataset:
+  name: TIIL
+  root: data/tiil
+  split: test
+model:
+  name: ALBEF-ITM
+  checkpoint: checkpoints/albef_tiil.pth
+target_score: inconsistency_logit
+evidence:
+  visual: sam_masks
+  textual: semantic_phrases
+  relation: contradiction
+pmesa: {integration_steps: 50, paths: 6, budget: 5, seed: 0}
+evaluation: [insertion_auc, deletion_auc, sufficiency, comprehensiveness, miou, span_f1, stability]
+
