@@ -4,13 +4,11 @@ dataset:
   root: data/vqa_x
   split: test
 model:
-  name: ALBEF-VQA
-  checkpoint: checkpoints/albef_vqa.pth
-target_score: predicted_answer_logit
+  name: Salesforce/blip-vqa-base
+target_score: predicted_answer_log_probability
 evidence:
-  visual: sam_masks
-  textual: semantic_phrases
-  relation: grounding
-pmesa: {integration_steps: 50, paths: 6, budget: 5, seed: 0}
+  visual: 6x6_restoration_grid
+  textual: question_and_predicted_answer
+  relation: cross_attention
+pmesa: {paths: 2, budget: 6, seed: 4242, baseline: blur}
 evaluation: [insertion_auc, deletion_auc, sufficiency, comprehensiveness, pointing_game, stability]
-

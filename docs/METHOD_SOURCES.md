@@ -3,12 +3,11 @@
 ## VQA-X
 
 VQA-X provides textual and visual explanations for VQA v2 examples. Images are
-from MS-COCO. The ALBEF repository provides the VQA implementation and a
-fine-tuned checkpoint.
+from MS-COCO. The qualitative runner uses the VQA-finetuned BLIP checkpoint.
 
 - https://openaccess.thecvf.com/content_cvpr_2018/CameraReady/2708.pdf
 - https://visualqa.org/download.html
-- https://github.com/salesforce/ALBEF
+- https://huggingface.co/Salesforce/blip-vqa-base
 
 ## TIIL
 
@@ -22,8 +21,8 @@ ALBEF-ITM checkpoint in `configs/tiil.yaml` must be trained separately.
 ## M-HalDetect
 
 M-HalDetect provides fine-grained accurate, inaccurate, and analysis spans for
-multimodal responses. The InstructBLIP detector checkpoint in
-`configs/mhaldetect.yaml` must be supplied separately.
+multimodal responses. `scripts/train_mhaldetect.py` trains the image-conditioned
+span head used by the qualitative runner.
 
 - https://github.com/hendryx-scale/mhal-detect
 - https://arxiv.org/abs/2308.06394

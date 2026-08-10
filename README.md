@@ -1,66 +1,60 @@
 # P-MESA
 
-Implementation of **P-MESA: Path-Guided Multimodal Evidence Subset
-Attribution**.
+Code for **P-MESA: Path-Guided Multimodal Evidence Subset Attribution**.
 
-P-MESA integrates evidence contributions along multiple restoration paths and
-selects a compact multimodal evidence subset for each prediction.
-
-## Installation
+## Setup
 
 ```bash
 conda env create -f environment.yml
 conda activate pmesa
-pip install -e .[experiments,dev]
-pytest -q
+pip install -e '.[experiments,dev]'
+huggingface-cli download Salesforce/blip-vqa-base
 ```
 
-## Demo
+## VQA-X
+
+Place the VQA-X test annotations at `data/explanation_dataset_test.json` and
+the corresponding COCO images in `data/vqax_images/`, then run:
 
 ```bash
-pmesa demo --output results/demo/explanation.json
-```
-
-## Data
-
-Expected dataset locations:
-
-```text
-data/vqa_x/
-data/tiil/
-data/mhaldetect/
-```
-
-VQA-X uses VQA v2 annotations and MS-COCO 2014 images. M-HalDetect uses its
-released span annotations and COCO image identifiers. TIIL must be obtained
-from the D-TIIL authors. Dataset and checkpoint sources are listed in
-[docs/METHOD_SOURCES.md](docs/METHOD_SOURCES.md).
-
-## Qualitative experiments
-
-Run VQA-X:
-
-```bash
-python scripts/run_qualitative.py \
-  --dataset vqax \
+PYTHONPATH=src python scripts/run_vqax.py \
   --annotations data/explanation_dataset_test.json \
   --image-dir data/vqax_images \
-  --indices 19506,19507,19508,19510,19512,19513,19514,19511 \
+  --indices 19507,19508,19512,19513 \
   --output results/vqax
 ```
 
-Run M-HalDetect:
+## M-HalDetect
 
 ```bash
-python scripts/run_qualitative.py \
-  --dataset mhaldetect \
-  --annotations data/mhaldetect/val_raw.json \
+git clone https://github.com/hendryx-scale/mhal-detect third_party/mhal-detect
+
+python scripts/prepare_mhaldetect.py \
+  --annotations third_party/mhal-detect/train_raw.json \
+  --output data/mhaldetect/images \
+  --max-images 700
+
+PYTHONPATH=src python scripts/train_mhaldetect.py \
+  --annotations third_party/mhal-detect/train_raw.json \
   --image-dir data/mhaldetect/images \
-  --indices 4,12,23,31,57,79,83,0 \
+  --max-images 700 \
+  --checkpoint checkpoints/mhaldetect_span_head.pt \
+  --feature-cache results/mhaldetect/features.pt
+
+python scripts/prepare_mhaldetect.py \
+  --annotations third_party/mhal-detect/val_raw.json \
+  --output data/mhaldetect/images \
+  --indices 23,213,327,328
+
+PYTHONPATH=src python scripts/run_mhaldetect.py \
+  --annotations third_party/mhal-detect/val_raw.json \
+  --image-dir data/mhaldetect/images \
+  --checkpoint checkpoints/mhaldetect_span_head.pt \
+  --indices 23,213,327,328 \
   --output results/mhaldetect
 ```
 
-Select four examples for each task:
+## Figure
 
 ```bash
 for task in vqax mhaldetect; do
@@ -68,33 +62,22 @@ for task in vqax mhaldetect; do
     results/${task}/manifest.json \
     --output results/${task}/selection.json
 done
-```
 
-Build the comparison PDF:
-
-```bash
 python scripts/build_qualitative_pdf.py \
   --root results \
   --output results/pmesa_qualitative_results.pdf
 ```
 
-The included qualitative runner uses frozen CLIP ViT-B/32. Task experiments
-defined in `configs/` require the corresponding ALBEF or InstructBLIP
-checkpoint and expose the predicted-answer, inconsistency, or hallucination
-logit through `PMESAAdapter`.
+Raw attribution arrays, panels, manifests, and the PDF are written to
+`results/`. Dataset and model sources are listed in
+[`docs/METHOD_SOURCES.md`](docs/METHOD_SOURCES.md).
 
-## Outputs
+## Test
 
-```text
-results/<task>/<example_id>/
-results/<task>/manifest.json
-results/<task>/selection.json
+```bash
+pytest -q
 ```
-
-Each example directory contains the input, method visualizations, and raw
-attribution arrays. Data, checkpoints, model caches, and results are excluded
-from version control.
 
 ## License
 
-This project is released under the [MIT License](LICENSE).
+[MIT](LICENSE)

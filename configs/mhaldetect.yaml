@@ -4,13 +4,13 @@ dataset:
   root: data/mhaldetect
   split: test
 model:
-  name: InstructBLIP-span-detector
-  checkpoint: checkpoints/instructblip_mhaldetect
+  name: BLIP-span-detector
+  backbone: Salesforce/blip-vqa-base
+  checkpoint: checkpoints/mhaldetect_span_head.pt
 target_score: span_hallucination_logit
 evidence:
-  visual: sam_masks
-  textual: response_spans
+  visual: 6x6_restoration_grid
+  textual: annotated_response_spans
   relation: absence_of_support
-pmesa: {integration_steps: 50, paths: 6, budget: 5, seed: 0}
+pmesa: {paths: 2, budget: 6, seed: 4242, baseline: blur}
 evaluation: [insertion_auc, deletion_auc, sufficiency, comprehensiveness, span_f1, stability]
-

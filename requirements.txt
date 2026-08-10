@@ -2,4 +2,7 @@ torch>=2.0
 numpy>=1.24
 Pillow>=9
 PyYAML>=6
+reportlab>=4
+requests>=2.28
+transformers>=4.35
 pytest>=7
