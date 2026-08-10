@@ -4,13 +4,11 @@ dataset:
   root: data/tiil
   split: test
 model:
-  name: ALBEF-ITM
-  checkpoint: checkpoints/albef_tiil.pth
-target_score: inconsistency_logit
+  name: openai/clip-vit-base-patch32
+target_score: original_minus_falsified_phrase_similarity
 evidence:
-  visual: sam_masks
-  textual: semantic_phrases
-  relation: contradiction
-pmesa: {integration_steps: 50, paths: 6, budget: 5, seed: 0}
+  visual: 6x6_restoration_grid
+  textual: minimal_changed_phrases
+  relation: contrastive_difference
+pmesa: {paths: 2, budget: 6, seed: 4242, baseline: blur}
 evaluation: [insertion_auc, deletion_auc, sufficiency, comprehensiveness, miou, span_f1, stability]
-

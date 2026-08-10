@@ -26,6 +26,16 @@ def main() -> None:
         elif run["dataset"] == "M-HalDetect":
             eligible = row["hallucination_probability"] >= args.min_probability and complete
             metric = row["hallucination_probability"]
+        elif run["dataset"] == "TIIL":
+            localization = row["localization"]
+            pmesa = localization["pmesa"]
+            baselines = [
+                localization[name]["energy_in_mask"]
+                for name in ("patch_similarity", "gradcam", "ig", "smoothgrad", "rise")
+            ]
+            gain = pmesa["energy_in_mask"] - max(baselines)
+            eligible = row["consistency_margin"] > 0 and pmesa["pointing_game"] and gain > 0 and complete
+            metric = gain
         else:
             raise SystemExit(f"unsupported dataset: {run['dataset']}")
         if eligible:
@@ -33,14 +43,17 @@ def main() -> None:
 
     if len(selected) < args.count:
         raise SystemExit(f"only {len(selected)} examples pass the selection criteria")
+    if run["dataset"] == "VQA-X":
+        criteria = {"prediction_correct": True, "min_score_delta": args.min_score_delta}
+    elif run["dataset"] == "M-HalDetect":
+        criteria = {"min_hallucination_probability": args.min_probability}
+    else:
+        criteria = {"positive_margin": True, "pointing_game": True, "positive_mask_energy_gain": True}
+    criteria["max_completeness_error"] = args.max_completeness_error
     report = {
         "source_manifest": str(args.manifest),
         "dataset": run["dataset"],
-        "criteria": {
-            "prediction_correct_and_min_score_delta": args.min_score_delta,
-            "min_hallucination_probability": args.min_probability,
-            "max_completeness_error": args.max_completeness_error,
-        },
+        "criteria": criteria,
         "selected": selected[:args.count],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

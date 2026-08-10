@@ -26,6 +26,13 @@ TASKS = {
                     ("counterevidence", "Counterevidence"), ("ig", "Integrated Gradients"),
                     ("smoothgrad", "SmoothGrad"), ("rise", "RISE"), ("pmesa", "P-MESA")),
     },
+    "tiil": {
+        "title": "TIIL: fine-grained inconsistency attribution",
+        "methods": (("input", "Input"), ("ground_truth", "Ground truth"),
+                    ("patch_similarity", "Patch similarity"), ("gradcam", "Grad-CAM"),
+                    ("ig", "Integrated Gradients"), ("smoothgrad", "SmoothGrad"),
+                    ("rise", "RISE"), ("pmesa", "P-MESA")),
+    },
 }
 
 
@@ -41,7 +48,6 @@ def fit(canvas: Canvas, text: str, x: float, y: float, width: float, size: float
 
 def reader(path: Path) -> ImageReader:
     image = Image.open(path).convert("RGB")
-    image = image.crop((0, 42, image.width, image.height))
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG", quality=90, optimize=True)
     buffer.seek(0)
@@ -62,7 +68,10 @@ def heading(row: dict, task: str) -> tuple[str, str]:
     if task == "vqax":
         delta = row["score"] - row["baseline_score"]
         return f"Q: {row['question']}", f"A: {row['predicted_answer']} | score gain {delta:.3f}"
-    return row["span"], f"inaccurate probability {row['hallucination_probability']:.3f}"
+    if task == "mhaldetect":
+        return row["span"], f"inaccurate probability {row['hallucination_probability']:.3f}"
+    energy = row["localization"]["pmesa"]["energy_in_mask"]
+    return f"{row['original_phrase']} -> {row['inconsistent_phrase']}", f"margin {row['consistency_margin']:.3f} | mask energy {energy:.3f}"
 
 
 def build(root: Path, output: Path) -> None:
@@ -84,7 +93,7 @@ def build(root: Path, output: Path) -> None:
         canvas.drawString(margin, page_height - 21, spec["title"])
         canvas.setFont("Helvetica", 7)
         canvas.setFillColor(colors.HexColor("#4B5563"))
-        canvas.drawRightString(page_width - margin, page_height - 21, f"Generated model outputs | {page_number}/2")
+        canvas.drawRightString(page_width - margin, page_height - 21, f"Generated model outputs | {page_number}/3")
 
         grid_x = margin + label_width
         cell_width = (page_width - grid_x - margin - gap * 3) / 4
@@ -109,7 +118,7 @@ def build(root: Path, output: Path) -> None:
                 label_width - 14, 7, ours)
             for column, example_id in enumerate(ids):
                 x = grid_x + column * (cell_width + gap)
-                draw_image(canvas, reader(root / task / example_id / f"{method}.png"),
+                draw_image(canvas, reader(root / task / example_id / f"{method}.jpg"),
                            x, y, cell_width, cell_height)
                 canvas.setStrokeColor(colors.HexColor("#C7CCD3"))
                 canvas.rect(x, y, cell_width, cell_height, fill=0, stroke=1)
@@ -118,9 +127,11 @@ def build(root: Path, output: Path) -> None:
         canvas.setFont("Helvetica", 5.8)
         if task == "vqax":
             canvas.drawString(margin, 22, "Target: BLIP VQA predicted-answer log probability. Selection: correct answer, score gain >= 0.02, completeness error <= 1e-3.")
-        else:
+        elif task == "mhaldetect":
             training = manifest["training"]
             canvas.drawString(margin, 22, f"Target: BLIP span-detector logit. Training: {training['train_images']} images, {training['train_spans']} spans; held-out F1 {training['best_f1']:.3f}.")
+        else:
+            canvas.drawString(margin, 22, "Target: CLIP similarity margin between the original and falsified phrases. Selection requires positive margin, correct pointing, and positive mask-energy gain.")
         canvas.drawString(margin, 13, "P-MESA: two seeded restoration paths, 6x6 image grid, six positive-contribution regions. Heatmaps use a global per-method p99 scale.")
         canvas.showPage()
     canvas.save()
@@ -129,7 +140,7 @@ def build(root: Path, output: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path("results"))
-    parser.add_argument("--output", type=Path, default=Path("results/pmesa_qualitative_results.pdf"))
+    parser.add_argument("--output", type=Path, default=Path("output/pdf/pmesa_qualitative_results.pdf"))
     args = parser.parse_args()
     build(args.root, args.output)
     print(args.output.resolve())

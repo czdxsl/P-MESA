@@ -11,12 +11,14 @@ from MS-COCO. The qualitative runner uses the VQA-finetuned BLIP checkpoint.
 
 ## TIIL
 
-TIIL contains 14K consistent and inconsistent image-text pairs with word- and
-pixel-level annotations. Access is provided by the D-TIIL authors. The
-ALBEF-ITM checkpoint in `configs/tiil.yaml` must be trained separately.
+TIIL contains consistent and inconsistent image-text pairs with word- and
+pixel-level annotations. The qualitative runner uses CLIP similarity between
+the minimal original and falsified phrases and evaluates against the released
+segmentation masks.
 
 - https://github.com/Mingzhen-Huang/D-TIIL
 - https://proceedings.iclr.cc/paper_files/paper/2024/hash/73ba81c7b25134a559c8a9c39ec1a4c3-Abstract-Conference.html
+- https://huggingface.co/openai/clip-vit-base-patch32
 
 ## M-HalDetect
 
