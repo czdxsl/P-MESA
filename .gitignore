@@ -10,4 +10,7 @@ data/
 checkpoints/
 outputs/
 !outputs/.gitkeep
+output/
+results/
 tmp/
+third_party/

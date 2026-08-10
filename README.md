@@ -1,136 +1,100 @@
 # P-MESA
 
-Reference implementation of **P-MESA: Path-Guided Multimodal Evidence Subset
-Attribution**. The code follows the manuscript's restoration-space formulation:
+Implementation of **P-MESA: Path-Guided Multimodal Evidence Subset
+Attribution**.
 
-1. represent visual regions, textual phrases, and cross-modal relations as
-   semantic evidence units;
-2. restore units from a task-valid low-evidence state over multiple monotone
-   text-first, vision-first, and interleaved paths;
-3. integrate gradients along every path and estimate path stability;
-4. greedily select a compact subset using contribution, saliency, coverage,
-   and stability.
+P-MESA integrates evidence contributions along multiple restoration paths and
+selects a compact multimodal evidence subset for each prediction.
 
-The target model remains frozen. The core package is model-agnostic and uses a
-small adapter contract so that an experiment can expose the exact scalar score
-used for VQA, inconsistency detection, or hallucination analysis.
+## Installation
 
-## What is implemented
-
-- Monotone multi-family restoration paths and midpoint path integration.
-- Completeness diagnostics for every restoration path.
-- Image low-evidence baseline (low-resolution reconstruction plus blur) and
-  overlap-safe region restoration.
-- Dense/evidence-level integrated gradients and interaction saliency.
-- The four-term monotone submodular subset objective and deterministic greedy
-  solver.
-- Insertion/deletion, sufficiency/comprehensiveness, mask IoU, span F1,
-  pointing-compatible localization primitives, and Jaccard stability.
-- Auditable qualitative-example selection that never changes predictions.
-- Fixed-style heatmap, region, and method-grid visualization.
-- JSON/JSONL experiment artifacts and configurations for VQA-X, TIIL, and
-  M-HalDetect.
-- Deterministic end-to-end demo and unit tests.
-
-Target-model training code and datasets are not redistributed. They have
-different licenses and several are not available through stable public URLs.
-See [docs/data_sources.md](docs/data_sources.md) and implement the narrow
-`PMESAAdapter.prepare` contract for the locally available official model.
-
-## Quick start
-
-```powershell
-$env:PYTHONPATH = "src"
-python -m pmesa.cli demo --output outputs/demo/explanation.json
+```bash
+conda env create -f environment.yml
+conda activate pmesa
+pip install -e .[experiments,dev]
+pytest -q
 ```
 
-Expected selected evidence is the beach/snow contradiction rather than an
-arbitrary dense map. The exported JSON contains per-path contribution and the
-numerical completeness error.
+## Demo
 
-Run tests in this workspace with third-party pytest plugin auto-loading disabled
-(one globally installed plugin hangs during collection in the supplied runtime):
-
-```powershell
-$env:PYTHONPATH = "src"
-$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
-pytest
+```bash
+pmesa demo --output results/demo/explanation.json
 ```
 
-For a clean environment:
+## Data
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -e ".[dev,plot]"
-pytest
-```
-
-## Adapter contract
-
-For one example, an adapter returns:
-
-- an ordered list of `EvidenceUnit` objects;
-- a differentiable scalar `score(z)`, with `z=0` the low-evidence state and
-  `z=1` the original input;
-- one non-negative dense-saliency aggregate per unit.
-
-```python
-prepared = adapter.prepare(example)
-explanation = PMESAExplainer(
-    steps=50, path_count=6, budget=5, seed=0
-).explain(prepared.units, prepared.score, prepared.saliency)
-```
-
-The scalar should be the predicted-answer logit (VQA), inconsistency logit
-(TIIL), or span hallucination logit (M-HalDetect), not a post-softmax class ID.
-Model parameters must be frozen while retaining gradients with respect to input
-embeddings, pixels, and restoration gates.
-
-### Relation-unit requirement
-
-Visual and textual gates map directly to masked regions and phrase embeddings.
-An ordinary VLM does **not** expose an independent relation input. Therefore an
-adapter must explicitly choose and report one of these scientifically distinct
-implementations:
-
-1. native relation gating in a cross-attention/compatibility module; or
-2. a cooperative interaction estimator (paired restoration minus the two
-   individual restorations).
-
-Silently adding a relation coordinate that the model ignores produces zero
-relation attribution and does not implement the manuscript. The generic core
-supports either choice through `score(z)` but does not pretend they are the same.
-
-## Reproducible experiment workflow
-
-1. Acquire official data/checkpoints and record their checksums.
-2. Freeze the target model and verify its task performance on the official split.
-3. Generate SAM masks/phrase groups once and cache them with version metadata.
-4. Run all methods with identical examples, normalization, colormap, and opacity.
-5. Save one JSONL record per example, including path completeness error.
-6. Compute tables from JSONL records; do not type values into LaTeX manually.
-7. Select qualitative examples with `select_representative_examples`, report the
-   ranking metric/threshold, and include at least one typical failure case.
-
-The manuscript audit in [docs/paper_audit.md](docs/paper_audit.md) lists the
-remaining methodological decisions that must be fixed before the numerical
-tables can be treated as verified.
-
-## Repository layout
+Expected dataset locations:
 
 ```text
-configs/                 three task experiment manifests
-docs/                    dataset status and manuscript audit
-src/pmesa/               attribution, subset, metrics, rendering, adapters
-tests/                    mathematical and end-to-end checks
-paper/results_template.tex  result-section structure without invented values
+data/vqa_x/
+data/tiil/
+data/mhaldetect/
 ```
 
-## Research integrity
+VQA-X uses VQA v2 annotations and MS-COCO 2014 images. M-HalDetect uses its
+released span annotations and COCO image identifiers. TIIL must be obtained
+from the D-TIIL authors. Dataset and checkpoint sources are listed in
+[docs/METHOD_SOURCES.md](docs/METHOD_SOURCES.md).
 
-Qualitative examples may be selected for clarity using a declared rule, but
-maps, predictions, labels, and metrics must remain generated outputs. If tuning
-improves a figure, report the tuning set and rerun once on a held-out test set.
-Fabricated or manually altered results are deliberately unsupported.
+## Qualitative experiments
 
+Run VQA-X:
+
+```bash
+python scripts/run_qualitative.py \
+  --dataset vqax \
+  --annotations data/explanation_dataset_test.json \
+  --image-dir data/vqax_images \
+  --indices 19506,19507,19508,19510,19512,19513,19514,19511 \
+  --output results/vqax
+```
+
+Run M-HalDetect:
+
+```bash
+python scripts/run_qualitative.py \
+  --dataset mhaldetect \
+  --annotations data/mhaldetect/val_raw.json \
+  --image-dir data/mhaldetect/images \
+  --indices 4,12,23,31,57,79,83,0 \
+  --output results/mhaldetect
+```
+
+Select four examples for each task:
+
+```bash
+for task in vqax mhaldetect; do
+  python scripts/select_qualitative_examples.py \
+    results/${task}/manifest.json \
+    --output results/${task}/selection.json
+done
+```
+
+Build the comparison PDF:
+
+```bash
+python scripts/build_qualitative_pdf.py \
+  --root results \
+  --output results/pmesa_qualitative_results.pdf
+```
+
+The included qualitative runner uses frozen CLIP ViT-B/32. Task experiments
+defined in `configs/` require the corresponding ALBEF or InstructBLIP
+checkpoint and expose the predicted-answer, inconsistency, or hallucination
+logit through `PMESAAdapter`.
+
+## Outputs
+
+```text
+results/<task>/<example_id>/
+results/<task>/manifest.json
+results/<task>/selection.json
+```
+
+Each example directory contains the input, method visualizations, and raw
+attribution arrays. Data, checkpoints, model caches, and results are excluded
+from version control.
+
+## License
+
+This project is released under the [MIT License](LICENSE).

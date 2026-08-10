@@ -35,8 +35,6 @@ def _ordered_path(order: Sequence[int], n_units: int, steps: int, name: str) -> 
     rank = torch.empty(n_units, dtype=torch.float64)
     for position, index in enumerate(order):
         rank[index] = position
-    # Each coordinate gets an equal-width ramp; this stays differentiable along
-    # active path segments and reaches exact endpoints.
     states = torch.clamp(t[:, None] * n_units - rank[None, :], 0.0, 1.0)
     return RestorationPath(name, states)
 
@@ -87,4 +85,3 @@ def generate_paths(
             name = f"interleaved-{i // 3 + 1}"
         paths.append(_ordered_path(order, n, steps, name))
     return paths
-

@@ -86,9 +86,7 @@ def greedy_select(objective: SubsetObjective, budget: int) -> list[int]:
     remaining = set(range(len(objective.units)))
     for _ in range(min(budget, len(remaining))):
         current = objective(selected)
-        # Stable tie-break by unit index makes repeated runs reproducible.
         best = max(remaining, key=lambda i: (objective(selected + [i]) - current, -i))
         selected.append(best)
         remaining.remove(best)
     return selected
-

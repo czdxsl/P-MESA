@@ -14,7 +14,6 @@ def overlay_heatmap(image: Image.Image, heatmap: np.ndarray, *, alpha: float = 0
     heatmap = np.asarray(heatmap, dtype=float)
     lo, hi = float(np.nanmin(heatmap)), float(np.nanmax(heatmap))
     normalized = np.zeros_like(heatmap) if hi - lo <= 1e-12 else (heatmap - lo) / (hi - lo)
-    # Compact inferno-like mapping implemented without matplotlib.
     rgb = np.stack([
         np.clip(2.2 * normalized, 0, 1),
         np.clip(2.2 * normalized - 0.7, 0, 1),
@@ -67,4 +66,3 @@ def save_method_grid(
     path = Path(output)
     path.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(path)
-

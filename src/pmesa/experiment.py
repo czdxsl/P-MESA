@@ -33,7 +33,7 @@ def run_dataset(
     category_of: Callable[[object], str] = lambda _: "default",
     output: str | Path,
 ) -> list[ResultRecord]:
-    """Explain/evaluate examples and atomically retain no fabricated fields."""
+    """Run P-MESA and save one record per example."""
     records: list[ResultRecord] = []
     for example in examples:
         prepared = adapter.prepare(example)

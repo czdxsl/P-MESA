@@ -1,4 +1,4 @@
-"""Auditable qualitative-example selection."""
+"""Qualitative-example selection."""
 
 from __future__ import annotations
 
@@ -20,11 +20,7 @@ def select_representative_examples(
     metric: str = "faithfulness",
     min_quality: float | None = None,
 ) -> list[CandidateExample]:
-    """Select strong examples with category diversity and deterministic ties.
-
-    This is intentionally auditable: no predictions or maps are modified, and
-    the metric and threshold can be reported in the paper caption/supplement.
-    """
+    """Select strong examples with category diversity and deterministic ties."""
     candidates = [e for e in examples if metric in e.metrics]
     if min_quality is not None:
         candidates = [e for e in candidates if e.metrics[metric] >= min_quality]
@@ -43,4 +39,3 @@ def select_representative_examples(
             if len(selected) == count:
                 break
     return selected
-

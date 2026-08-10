@@ -18,7 +18,6 @@ def low_evidence_image(image: torch.Tensor, *, downsample_factor: int = 16, blur
     if blur_kernel > 1:
         if blur_kernel % 2 == 0:
             raise ValueError("blur_kernel must be odd")
-        # Separable binomial-like Gaussian approximation without extra deps.
         coords = torch.arange(blur_kernel, device=x.device, dtype=x.dtype) - blur_kernel // 2
         sigma = max(blur_kernel / 6.0, 0.5)
         kernel = torch.exp(-(coords**2) / (2 * sigma**2))

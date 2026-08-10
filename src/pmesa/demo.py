@@ -20,7 +20,6 @@ def run_demo(seed: int = 7):
     weights = torch.tensor([0.8, 0.1, 0.9, 0.2, 1.4])
 
     def score(state: torch.Tensor) -> torch.Tensor:
-        # Includes a genuine cross-modal synergy term; differentiable on [0,1]^N.
         return (
             torch.dot(weights, state)
             + 0.7 * state[0] * state[2]

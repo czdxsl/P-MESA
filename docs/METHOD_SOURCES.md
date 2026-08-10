@@ -1,0 +1,29 @@
+# Method sources
+
+## VQA-X
+
+VQA-X provides textual and visual explanations for VQA v2 examples. Images are
+from MS-COCO. The ALBEF repository provides the VQA implementation and a
+fine-tuned checkpoint.
+
+- https://openaccess.thecvf.com/content_cvpr_2018/CameraReady/2708.pdf
+- https://visualqa.org/download.html
+- https://github.com/salesforce/ALBEF
+
+## TIIL
+
+TIIL contains 14K consistent and inconsistent image-text pairs with word- and
+pixel-level annotations. Access is provided by the D-TIIL authors. The
+ALBEF-ITM checkpoint in `configs/tiil.yaml` must be trained separately.
+
+- https://github.com/Mingzhen-Huang/D-TIIL
+- https://proceedings.iclr.cc/paper_files/paper/2024/hash/73ba81c7b25134a559c8a9c39ec1a4c3-Abstract-Conference.html
+
+## M-HalDetect
+
+M-HalDetect provides fine-grained accurate, inaccurate, and analysis spans for
+multimodal responses. The InstructBLIP detector checkpoint in
+`configs/mhaldetect.yaml` must be supplied separately.
+
+- https://github.com/hendryx-scale/mhal-detect
+- https://arxiv.org/abs/2308.06394
