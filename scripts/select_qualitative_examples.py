@@ -8,7 +8,7 @@ from pathlib import Path
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("manifest", type=Path)
-    parser.add_argument("--count", type=int, default=4)
+    parser.add_argument("--count", type=int, default=8)
     parser.add_argument("--min-score-delta", type=float, default=0.02)
     parser.add_argument("--min-probability", type=float, default=0.7)
     parser.add_argument("--max-completeness-error", type=float, default=1e-3)
@@ -40,6 +40,8 @@ def main() -> None:
             raise SystemExit(f"unsupported dataset: {run['dataset']}")
         if eligible:
             selected.append({"example_id": row["example_id"], "selection_metric": metric})
+
+    selected.sort(key=lambda row: (-row["selection_metric"], row["example_id"]))
 
     if len(selected) < args.count:
         raise SystemExit(f"only {len(selected)} examples pass the selection criteria")

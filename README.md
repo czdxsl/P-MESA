@@ -13,14 +13,20 @@ huggingface-cli download Salesforce/blip-vqa-base
 
 ## VQA-X
 
-Place the VQA-X test annotations at `data/explanation_dataset_test.json` and
-the corresponding COCO images in `data/vqax_images/`, then run:
+Place the VQA-X test annotations at `data/explanation_dataset_test.json`, then download the selected COCO images:
+```bash
+python scripts/prepare_vqax.py \
+  --annotations data/explanation_dataset_test.json \
+  --indices 19511,19513,19521,19527,19510,19532,19512,19519
+```
+
+Run the experiment:
 
 ```bash
 PYTHONPATH=src python scripts/run_vqax.py \
   --annotations data/explanation_dataset_test.json \
   --image-dir data/vqax_images \
-  --indices 19510,19512,19513,19511 \
+  --indices 19511,19513,19521,19527,19510,19532,19512,19519 \
   --output output/qualitative/vqax
 ```
 
@@ -44,13 +50,13 @@ PYTHONPATH=src python scripts/train_mhaldetect.py \
 python scripts/prepare_mhaldetect.py \
   --annotations third_party/mhal-detect/val_raw.json \
   --output data/mhaldetect/images \
-  --indices 23,213,327,159
+  --indices 13,58,347,324,222,725,346,327
 
 PYTHONPATH=src python scripts/run_mhaldetect.py \
   --annotations third_party/mhal-detect/val_raw.json \
   --image-dir data/mhaldetect/images \
   --checkpoint checkpoints/mhaldetect_span_head.pt \
-  --indices 23,213,327,159 \
+  --indices 13,58,347,324,222,725,346,327 \
   --output output/qualitative/mhaldetect
 ```
 
@@ -63,7 +69,7 @@ PYTHONPATH=src python scripts/run_tiil.py \
   --consistent data/tiil/consistent.json \
   --inconsistent data/tiil/inconsistent.json \
   --data-root data/tiil \
-  --indices 6630,5511,3887,944 \
+  --indices 6630,3887,5511,3674,944,343,1734,5905 \
   --output output/qualitative/tiil
 ```
 
@@ -73,7 +79,8 @@ PYTHONPATH=src python scripts/run_tiil.py \
 for task in vqax mhaldetect tiil; do
   python scripts/select_qualitative_examples.py \
     output/qualitative/${task}/manifest.json \
-    --output output/qualitative/${task}/selection.json
+    --output output/qualitative/${task}/selection.json \
+    --count 8
 done
 
 python scripts/build_qualitative_pdf.py \

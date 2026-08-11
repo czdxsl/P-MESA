@@ -80,11 +80,16 @@ def build(root: Path, output: Path) -> None:
     canvas = Canvas(str(output), pagesize=(page_width, page_height), pageCompression=1)
     canvas.setTitle("P-MESA qualitative results")
 
-    for page_number, (task, spec) in enumerate(TASKS.items(), 1):
+    pages = [
+        (task, spec, offset)
+        for task, spec in TASKS.items()
+        for offset in (0, 4)
+    ]
+    for page_number, (task, spec, offset) in enumerate(pages, 1):
         selection = json.loads((root / task / "selection.json").read_text(encoding="utf-8"))
         manifest = json.loads((root / task / "manifest.json").read_text(encoding="utf-8"))
         examples = {row["example_id"]: row for row in manifest["examples"]}
-        ids = [row["example_id"] for row in selection["selected"]]
+        ids = [row["example_id"] for row in selection["selected"]][offset:offset + 4]
         methods = spec["methods"]
 
         margin, label_width, gap = 22, 106, 5
@@ -93,7 +98,7 @@ def build(root: Path, output: Path) -> None:
         canvas.drawString(margin, page_height - 21, spec["title"])
         canvas.setFont("Helvetica", 7)
         canvas.setFillColor(colors.HexColor("#4B5563"))
-        canvas.drawRightString(page_width - margin, page_height - 21, f"Generated model outputs | {page_number}/3")
+        canvas.drawRightString(page_width - margin, page_height - 21, f"Examples {offset + 1}-{offset + len(ids)} | {page_number}/{len(pages)}")
 
         grid_x = margin + label_width
         cell_width = (page_width - grid_x - margin - gap * 3) / 4
