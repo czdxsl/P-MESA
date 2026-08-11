@@ -10,12 +10,12 @@ import torch.nn.functional as F
 from PIL import Image
 from transformers import BlipForQuestionAnswering, BlipProcessor
 
-from blip_attribution import blur_baseline, integrated_gradients, path_subset, rise, smoothgrad
+from blip_attribution import blur_baseline, integrated_gradients, path_subset, rise, smoothgrad_ig
 from panel_utils import PANEL_SIZE, colorize, save_jpeg
 from pmesa.models import BlipSpanDetector, SpanHead
 
 
-METHODS = ("hallucination", "counterevidence", "ig", "smoothgrad", "rise", "pmesa")
+METHODS = ("hallucination", "counterevidence", "ig", "smoothgrad_ig", "rise", "pmesa")
 
 
 def main() -> None:
@@ -77,7 +77,7 @@ def main() -> None:
             "hallucination": hallucination,
             "counterevidence": counterevidence,
             "ig": integrated_gradients(score, pixels, baseline),
-            "smoothgrad": smoothgrad(score, pixels),
+            "smoothgrad_ig": smoothgrad_ig(score, pixels, baseline),
             "rise": rise(score, pixels, baseline, samples=48),
             "pmesa": pmesa,
         }
@@ -119,6 +119,7 @@ def main() -> None:
         "checkpoint": str(args.checkpoint),
         "panel_size": list(PANEL_SIZE),
         "training": {key: saved[key] for key in ("seed", "train_images", "val_images", "train_spans", "val_spans", "best_f1")},
+        "attribution_settings": {"ig_steps": 32, "smoothgrad_ig_samples": 8, "smoothgrad_ig_steps": 16, "smoothgrad_ig_noise_fraction": 0.1, "rise_masks": 48},
         "normalization": {"rule": "global per-method p99", "scales": scales},
         "examples": manifest,
     }

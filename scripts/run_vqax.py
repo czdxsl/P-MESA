@@ -10,11 +10,11 @@ import torch.nn.functional as F
 from PIL import Image
 from transformers import BlipForQuestionAnswering, BlipProcessor
 
-from blip_attribution import blur_baseline, integrated_gradients, path_subset, rise, smoothgrad
+from blip_attribution import blur_baseline, integrated_gradients, path_subset, rise, smoothgrad_ig
 from panel_utils import PANEL_SIZE, colorize, save_jpeg
 
 
-METHODS = ("gradcam", "attention", "ig", "smoothgrad", "rise", "pmesa")
+METHODS = ("gradcam", "attention", "ig", "smoothgrad_ig", "rise", "pmesa")
 
 
 def main() -> None:
@@ -81,7 +81,7 @@ def main() -> None:
             "gradcam": gradcam,
             "attention": attention,
             "ig": integrated_gradients(score, pixels, baseline),
-            "smoothgrad": smoothgrad(score, pixels),
+            "smoothgrad_ig": smoothgrad_ig(score, pixels, baseline),
             "rise": rise(score, pixels, baseline, samples=48),
             "pmesa": pmesa,
         }
@@ -124,6 +124,7 @@ def main() -> None:
         "dataset": "VQA-X",
         "model": "Salesforce/blip-vqa-base",
         "panel_size": list(PANEL_SIZE),
+        "attribution_settings": {"ig_steps": 32, "smoothgrad_ig_samples": 8, "smoothgrad_ig_steps": 16, "smoothgrad_ig_noise_fraction": 0.1, "rise_masks": 48},
         "normalization": {"rule": "global per-method p99", "scales": scales},
         "examples": manifest,
     }

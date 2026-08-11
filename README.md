@@ -86,6 +86,11 @@ attribution arrays, manifests, and the combined PDF are written to `output/`.
 Dataset and model sources are listed in
 [`docs/METHOD_SOURCES.md`](docs/METHOD_SOURCES.md).
 
+Qualitative baselines use 32-step trapezoidal Integrated Gradients and
+SmoothGrad-IG with 8 noise samples and 16 integration steps. RISE uses 48 masks
+for these qualitative panels; increase its mask budget for aggregate benchmark
+reporting.
+
 ## Test
 
 ```bash

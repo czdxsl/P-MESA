@@ -17,20 +17,20 @@ TASKS = {
     "vqax": {
         "title": "VQA-X: predicted-answer attribution",
         "methods": (("input", "Input"), ("gradcam", "Grad-CAM"), ("attention", "Attention"),
-                    ("ig", "Integrated Gradients"), ("smoothgrad", "SmoothGrad"),
+                    ("ig", "Integrated Gradients"), ("smoothgrad_ig", "SmoothGrad-IG"),
                     ("rise", "RISE"), ("pmesa", "P-MESA")),
     },
     "mhaldetect": {
         "title": "M-HalDetect: inaccurate-span attribution",
         "methods": (("input", "Input"), ("hallucination", "Positive evidence"),
                     ("counterevidence", "Counterevidence"), ("ig", "Integrated Gradients"),
-                    ("smoothgrad", "SmoothGrad"), ("rise", "RISE"), ("pmesa", "P-MESA")),
+                    ("smoothgrad_ig", "SmoothGrad-IG"), ("rise", "RISE"), ("pmesa", "P-MESA")),
     },
     "tiil": {
         "title": "TIIL: fine-grained inconsistency attribution",
         "methods": (("input", "Input"), ("ground_truth", "Ground truth"),
                     ("patch_similarity", "Patch similarity"), ("gradcam", "Grad-CAM"),
-                    ("ig", "Integrated Gradients"), ("smoothgrad", "SmoothGrad"),
+                    ("ig", "Integrated Gradients"), ("smoothgrad_ig", "SmoothGrad-IG"),
                     ("rise", "RISE"), ("pmesa", "P-MESA")),
     },
 }
@@ -132,7 +132,7 @@ def build(root: Path, output: Path) -> None:
             canvas.drawString(margin, 22, f"Target: BLIP span-detector logit. Training: {training['train_images']} images, {training['train_spans']} spans; held-out F1 {training['best_f1']:.3f}.")
         else:
             canvas.drawString(margin, 22, "Target: CLIP similarity margin between the original and falsified phrases. Selection requires positive margin, correct pointing, and positive mask-energy gain.")
-        canvas.drawString(margin, 13, "P-MESA: two seeded restoration paths, 6x6 image grid, six positive-contribution regions. Heatmaps use a global per-method p99 scale.")
+        canvas.drawString(margin, 13, "Baselines: IG-32; SmoothGrad-IG 8x16; RISE-48. P-MESA: two paths, 6x6 grid, six regions. Global per-method p99 scaling.")
         canvas.showPage()
     canvas.save()
 

@@ -11,11 +11,11 @@ import torch.nn.functional as F
 from PIL import Image, ImageDraw
 from transformers import CLIPModel, CLIPProcessor
 
-from blip_attribution import blur_baseline, integrated_gradients, path_subset, rise, smoothgrad
+from blip_attribution import blur_baseline, integrated_gradients, path_subset, rise, smoothgrad_ig
 from panel_utils import PANEL_SIZE, colorize, save_jpeg
 
 
-METHODS = ("patch_similarity", "gradcam", "ig", "smoothgrad", "rise", "pmesa")
+METHODS = ("patch_similarity", "gradcam", "ig", "smoothgrad_ig", "rise", "pmesa")
 
 
 def changed_phrases(consistent: str, inconsistent: str) -> tuple[str, str]:
@@ -127,7 +127,7 @@ def main() -> None:
             "patch_similarity": patch_similarity,
             "gradcam": gradcam,
             "ig": integrated_gradients(score, pixel_values, baseline),
-            "smoothgrad": smoothgrad(score, pixel_values),
+            "smoothgrad_ig": smoothgrad_ig(score, pixel_values, baseline),
             "rise": rise(score, pixel_values, baseline, samples=48),
             "pmesa": pmesa,
         }
@@ -174,6 +174,7 @@ def main() -> None:
         "model": "openai/clip-vit-base-patch32",
         "target": "original_minus_falsified_phrase_similarity",
         "panel_size": list(PANEL_SIZE),
+        "attribution_settings": {"ig_steps": 32, "smoothgrad_ig_samples": 8, "smoothgrad_ig_steps": 16, "smoothgrad_ig_noise_fraction": 0.1, "rise_masks": 48},
         "normalization": {"rule": "global per-method p99", "scales": scales},
         "examples": manifest,
     }

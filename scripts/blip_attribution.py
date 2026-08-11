@@ -27,23 +27,44 @@ def restore(x: torch.Tensor, baseline: torch.Tensor, mask: torch.Tensor) -> torc
     return baseline + mask * (x - baseline)
 
 
-def integrated_gradients(score, x: torch.Tensor, baseline: torch.Tensor, steps: int = 12) -> torch.Tensor:
+def gaussian_blur(heat: torch.Tensor, kernel_size: int = 9, sigma: float = 2.0) -> torch.Tensor:
+    coordinates = torch.arange(kernel_size, device=heat.device, dtype=heat.dtype) - (kernel_size - 1) / 2
+    kernel = torch.exp(-(coordinates ** 2) / (2 * sigma ** 2))
+    kernel = kernel / kernel.sum()
+    value = heat[None, None]
+    value = F.conv2d(value, kernel[None, None, :, None], padding=(kernel_size // 2, 0))
+    value = F.conv2d(value, kernel[None, None, None, :], padding=(0, kernel_size // 2))
+    return value[0, 0]
+
+
+def integrated_attribution(score, x: torch.Tensor, baseline: torch.Tensor, steps: int) -> torch.Tensor:
     total = torch.zeros_like(x)
-    for alpha in torch.linspace(1 / steps, 1, steps, device=x.device):
+    alphas = torch.linspace(0, 1, steps + 1, device=x.device)
+    for index, alpha in enumerate(alphas):
         point = (baseline + alpha * (x - baseline)).detach().requires_grad_(True)
-        total += torch.autograd.grad(score(point), point)[0]
-    heat = ((x - baseline) * total / steps).abs().sum(1)
-    return F.avg_pool2d(heat[:, None], 15, stride=1, padding=7)[0, 0]
+        weight = 0.5 if index in (0, steps) else 1.0
+        total += weight * torch.autograd.grad(score(point), point)[0]
+    return (x - baseline) * total / steps
 
 
-def smoothgrad(score, x: torch.Tensor, samples: int = 8, sigma: float = 0.035) -> torch.Tensor:
+def integrated_gradients(score, x: torch.Tensor, baseline: torch.Tensor, steps: int = 32) -> torch.Tensor:
+    attribution = integrated_attribution(score, x, baseline, steps)
+    heat = attribution.square().sum(1).sqrt()[0]
+    return gaussian_blur(heat)
+
+
+def smoothgrad_ig(score, x: torch.Tensor, baseline: torch.Tensor, samples: int = 8, steps: int = 16, noise_fraction: float = 0.1) -> torch.Tensor:
     generator = torch.Generator(device=x.device).manual_seed(1701)
-    maps = []
+    total = torch.zeros_like(x)
+    lower, upper = x.min().detach(), x.max().detach()
+    noise_scale = (upper - lower).clamp_min(1e-6) * noise_fraction
     for _ in range(samples):
-        point = (x + torch.randn(x.shape, generator=generator, device=x.device) * sigma).detach().requires_grad_(True)
-        maps.append(torch.autograd.grad(score(point), point)[0].abs().sum(1)[0])
-    heat = torch.stack(maps).mean(0)
-    return F.avg_pool2d(heat[None, None], 15, stride=1, padding=7)[0, 0]
+        noise = torch.randn(x.shape, generator=generator, device=x.device, dtype=x.dtype) * noise_scale
+        noisy = (x + noise).clamp(lower, upper)
+        total += integrated_attribution(score, noisy, baseline, steps)
+    attribution = total / samples
+    heat = attribution.square().sum(1).sqrt()[0]
+    return gaussian_blur(heat)
 
 
 def rise(score, x: torch.Tensor, baseline: torch.Tensor, samples: int = 96, cells: int = 8) -> torch.Tensor:

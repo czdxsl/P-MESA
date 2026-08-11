@@ -31,7 +31,7 @@ def main() -> None:
             pmesa = localization["pmesa"]
             baselines = [
                 localization[name]["energy_in_mask"]
-                for name in ("patch_similarity", "gradcam", "ig", "smoothgrad", "rise")
+                for name in ("patch_similarity", "gradcam", "ig", "smoothgrad_ig", "rise")
             ]
             gain = pmesa["energy_in_mask"] - max(baselines)
             eligible = row["consistency_margin"] > 0 and pmesa["pointing_game"] and gain > 0 and complete
