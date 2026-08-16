@@ -29,8 +29,8 @@ class RestorationPath:
 
 def _ordered_path(order: Sequence[int], n_units: int, steps: int, name: str) -> RestorationPath:
     """Piecewise-linear path that restores units in the supplied order."""
-    if steps < n_units:
-        raise ValueError("steps must be at least the number of units for ordered paths")
+    if steps < 1:
+        raise ValueError("steps must be positive")
     t = torch.linspace(0.0, 1.0, steps + 1, dtype=torch.float64)
     rank = torch.empty(n_units, dtype=torch.float64)
     for position, index in enumerate(order):
@@ -46,19 +46,19 @@ def generate_paths(
     count: int = 6,
     seed: int = 0,
 ) -> list[RestorationPath]:
-    """Generate text-first, vision-first, and interleaved monotone paths.
+    """Generate text-first, vision-first, and interleaved primitive paths.
 
     Paths beyond the first three use reproducible within-family permutations,
     matching the manuscript's two paths per family when ``count=6``.
     """
+    if any(not unit.is_primitive for unit in units):
+        raise ValueError("restoration paths are defined only over primitive evidence")
     n = len(units)
     if n == 0 or count < 1:
         raise ValueError("at least one unit and one path are required")
-    steps = max(steps, n)
     groups = {
         EvidenceKind.VISUAL: [i for i, u in enumerate(units) if u.kind is EvidenceKind.VISUAL],
         EvidenceKind.TEXTUAL: [i for i, u in enumerate(units) if u.kind is EvidenceKind.TEXTUAL],
-        EvidenceKind.RELATION: [i for i, u in enumerate(units) if u.kind is EvidenceKind.RELATION],
     }
     generator = torch.Generator().manual_seed(seed)
 
@@ -70,14 +70,14 @@ def generate_paths(
     paths: list[RestorationPath] = []
     for i in range(count):
         variant = i % 3
-        v, q, r = (shuffled(groups[k]) for k in (EvidenceKind.VISUAL, EvidenceKind.TEXTUAL, EvidenceKind.RELATION))
+        v, q = (shuffled(groups[k]) for k in (EvidenceKind.VISUAL, EvidenceKind.TEXTUAL))
         if variant == 0:
-            order, name = q + r + v, f"text-first-{i // 3 + 1}"
+            order, name = q + v, f"text-first-{i // 3 + 1}"
         elif variant == 1:
-            order, name = v + r + q, f"vision-first-{i // 3 + 1}"
+            order, name = v + q, f"vision-first-{i // 3 + 1}"
         else:
             order = []
-            columns = [v, q, r]
+            columns = [q, v]
             while any(columns):
                 for column in columns:
                     if column:

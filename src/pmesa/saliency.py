@@ -7,6 +7,31 @@ from typing import Callable
 import torch
 
 
+def multimodal_saliency(
+    target_score: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    original_image: torch.Tensor,
+    baseline_image: torch.Tensor,
+    original_text: torch.Tensor,
+    baseline_text: torch.Tensor,
+    *,
+    steps: int = 50,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute Eq. (1) with the opposite modality fixed at its input."""
+    visual = integrated_gradients(
+        lambda image: target_score(image, original_text),
+        original_image,
+        baseline_image,
+        steps=steps,
+    )
+    textual = integrated_gradients(
+        lambda text: target_score(original_image, text),
+        original_text,
+        baseline_text,
+        steps=steps,
+    )
+    return visual, textual
+
+
 def integrated_gradients(
     score: Callable[[torch.Tensor], torch.Tensor],
     original: torch.Tensor,

@@ -5,10 +5,24 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Protocol
 
 from .adapters import PMESAAdapter
 from .explainer import PMESAExplainer
+
+
+class ExperimentIntegration(Protocol):
+    """Target-model and dataset operations required by the generic runner."""
+
+    adapter: PMESAAdapter
+
+    def examples(self) -> Iterable[object]: ...
+
+    def example_id(self, example: object) -> str: ...
+
+    def category(self, example: object) -> str: ...
+
+    def evaluate(self, example: object, explanation: object) -> dict[str, float]: ...
 
 
 @dataclass(frozen=True)
@@ -20,6 +34,7 @@ class ResultRecord:
     saliency: list[float]
     stability: list[float]
     completeness_error: list[float]
+    primitive_count: int
     metrics: dict[str, float]
 
 
@@ -46,6 +61,7 @@ def run_dataset(
             saliency=explanation.saliency.tolist(),
             stability=explanation.attribution.stability.tolist(),
             completeness_error=explanation.attribution.completeness_error.tolist(),
+            primitive_count=explanation.attribution.primitive_count,
             metrics=evaluate(example, explanation),
         ))
     path = Path(output)

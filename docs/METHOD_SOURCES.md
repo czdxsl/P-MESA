@@ -1,30 +1,25 @@
-# Method sources
+# Data and target-model sources
+
+The repository does not redistribute datasets or pretrained checkpoints.
 
 ## VQA-X
 
-VQA-X provides textual and visual explanations for VQA v2 examples. Images are
-from MS-COCO. The qualitative runner uses the VQA-finetuned BLIP checkpoint.
-
-- https://openaccess.thecvf.com/content_cvpr_2018/CameraReady/2708.pdf
-- https://visualqa.org/download.html
-- https://huggingface.co/Salesforce/blip-vqa-base
+- Dataset: https://github.com/Seth-Park/MultimodalExplanations
+- Images and VQA annotations: https://visualqa.org/download.html
+- ALBEF: https://github.com/salesforce/ALBEF
 
 ## TIIL
 
-TIIL contains consistent and inconsistent image-text pairs with word- and
-pixel-level annotations. The qualitative runner uses CLIP similarity between
-the minimal original and falsified phrases and evaluates against the released
-segmentation masks.
-
-- https://github.com/Mingzhen-Huang/D-TIIL
-- https://proceedings.iclr.cc/paper_files/paper/2024/hash/73ba81c7b25134a559c8a9c39ec1a4c3-Abstract-Conference.html
-- https://huggingface.co/openai/clip-vit-base-patch32
+- Dataset and D-TIIL reference code: https://github.com/Mingzhen-Huang/D-TIIL
+- ALBEF: https://github.com/salesforce/ALBEF
 
 ## M-HalDetect
 
-M-HalDetect provides fine-grained accurate, inaccurate, and analysis spans for
-multimodal responses. `scripts/train_mhaldetect.py` trains the image-conditioned
-span head used by the qualitative runner.
+- Dataset: https://github.com/hendryx-scale/mhal-detect
+- InstructBLIP/LAVIS: https://github.com/salesforce/LAVIS
 
-- https://github.com/hendryx-scale/mhal-detect
-- https://arxiv.org/abs/2308.06394
+## Evidence construction
+
+- Segment Anything: https://github.com/facebookresearch/segment-anything
+
+All target-model parameters must remain frozen during explanation generation. Dataset preprocessing and splits must follow the official releases.

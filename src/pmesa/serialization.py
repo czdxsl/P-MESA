@@ -11,7 +11,7 @@ from .explainer import Explanation
 def save_explanation(explanation: Explanation, path: str | Path) -> None:
     payload = {
         "units": [
-            {"id": u.id, "kind": u.kind.value, "label": u.label,
+            {"id": u.id, "kind": u.kind.value, "label": u.label, "endpoints": u.endpoints,
              "semantic_factors": dict(u.semantic_factors), "relation_types": dict(u.relation_types)}
             for u in explanation.units
         ],
@@ -22,7 +22,7 @@ def save_explanation(explanation: Explanation, path: str | Path) -> None:
         "per_path": explanation.attribution.per_path.tolist(),
         "stability": explanation.attribution.stability.tolist(),
         "completeness_error": explanation.attribution.completeness_error.tolist(),
+        "primitive_count": explanation.attribution.primitive_count,
     }
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
-

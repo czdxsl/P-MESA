@@ -52,7 +52,14 @@ def save_method_grid(
         raise ValueError("grid needs rows and columns")
     width, height = rows[0][1][0].size
     label_height, row_label_width = 30, 150
-    canvas = Image.new("RGB", (row_label_width + len(column_labels) * (width + padding), label_height + len(rows) * (height + padding)), "white")
+    canvas = Image.new(
+        "RGB",
+        (
+            row_label_width + len(column_labels) * (width + padding),
+            label_height + len(rows) * (height + padding),
+        ),
+        "white",
+    )
     draw = ImageDraw.Draw(canvas)
     for col, label in enumerate(column_labels):
         draw.text((row_label_width + col * (width + padding), 6), label, fill="black")

@@ -23,10 +23,10 @@ class PMESAAdapter(ABC):
     """Prepare one dataset example for the model-agnostic explainer.
 
     Implementations must keep target-model parameters frozen. ``score`` must
-    remain differentiable with respect to every restoration coordinate. If a
-    model cannot expose an independent relation gate, relation units should be
-    scored with a documented cooperative-interaction estimator rather than
-    silently treated as native model inputs.
+    remain differentiable with respect to every primitive visual or textual
+    restoration coordinate. Relation units must reference primitive endpoints;
+    the core derives their contributions from four model evaluations and never
+    passes a synthetic relation gate to the target model.
     """
 
     @abstractmethod
@@ -38,4 +38,3 @@ class PMESAAdapter(ABC):
         model.eval()
         for parameter in model.parameters():
             parameter.requires_grad_(False)
-

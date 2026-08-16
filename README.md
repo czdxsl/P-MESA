@@ -1,107 +1,84 @@
 # P-MESA
 
-Code for **P-MESA: Path-Guided Multimodal Evidence Subset Attribution**.
+Official implementation of **P-MESA: Path-Guided Multimodal Evidence Subset Attribution**.
 
-## Setup
+P-MESA explains a frozen vision-language model with primitive visual and textual evidence, derived cross-modal relations, multiple monotonic restoration paths, and a compact submodular evidence subset.
+
+## Installation
+
+Linux with Python 3.10 and CUDA 11.8 is recommended.
 
 ```bash
 conda env create -f environment.yml
 conda activate pmesa
 pip install -e '.[experiments,dev]'
-huggingface-cli download Salesforce/blip-vqa-base
+pip install 'git+https://github.com/facebookresearch/segment-anything.git'
 ```
 
-## VQA-X
+Target-model checkpoints and datasets are not redistributed. Put them at the paths declared in `configs/` or update those paths locally.
 
-Place the VQA-X test annotations at `data/explanation_dataset_test.json`, then download the selected COCO images:
-```bash
-python scripts/prepare_vqax.py \
-  --annotations data/explanation_dataset_test.json \
-  --indices 19511,19513,19521,19527,19510,19532,19512,19519
-```
+## Configuration
 
-Run the experiment:
+The three manuscript tasks use:
 
-```bash
-PYTHONPATH=src python scripts/run_vqax.py \
-  --annotations data/explanation_dataset_test.json \
-  --image-dir data/vqax_images \
-  --indices 19511,19513,19521,19527,19510,19532,19512,19519 \
-  --output output/qualitative/vqax
-```
+- VQA-X with ALBEF-VQA and the predicted-answer pre-softmax logit;
+- TIIL with ALBEF-ITM and the image-text inconsistency score;
+- M-HalDetect with an InstructBLIP-based detector and span hallucination probability.
 
-## M-HalDetect
+The default method settings match the manuscript: 50 integration points, six restoration paths, `K=5`, three relation candidates per textual unit, equal objective weights, and three random seeds.
 
 ```bash
-git clone https://github.com/hendryx-scale/mhal-detect third_party/mhal-detect
-
-python scripts/prepare_mhaldetect.py \
-  --annotations third_party/mhal-detect/train_raw.json \
-  --output data/mhaldetect/images \
-  --max-images 700
-
-PYTHONPATH=src python scripts/train_mhaldetect.py \
-  --annotations third_party/mhal-detect/train_raw.json \
-  --image-dir data/mhaldetect/images \
-  --max-images 700 \
-  --checkpoint checkpoints/mhaldetect_span_head.pt \
-  --feature-cache results/mhaldetect/features.pt
-
-python scripts/prepare_mhaldetect.py \
-  --annotations third_party/mhal-detect/val_raw.json \
-  --output data/mhaldetect/images \
-  --indices 13,58,347,324,222,725,346,327
-
-PYTHONPATH=src python scripts/run_mhaldetect.py \
-  --annotations third_party/mhal-detect/val_raw.json \
-  --image-dir data/mhaldetect/images \
-  --checkpoint checkpoints/mhaldetect_span_head.pt \
-  --indices 13,58,347,324,222,725,346,327 \
-  --output output/qualitative/mhaldetect
+python scripts/validate_setup.py configs/vqa_x.yaml
+python scripts/validate_setup.py configs/tiil.yaml
+python scripts/validate_setup.py configs/mhaldetect.yaml
 ```
 
-## TIIL
+Add `--check-artifacts` to verify local dataset and checkpoint paths.
 
-Place TIIL under `data/tiil/`, then run:
+Run a task with the target-model integration that loads your official checkpoint and dataset split:
 
 ```bash
-PYTHONPATH=src python scripts/run_tiil.py \
-  --consistent data/tiil/consistent.json \
-  --inconsistent data/tiil/inconsistent.json \
-  --data-root data/tiil \
-  --indices 6630,3887,5511,3674,944,343,1734,5905 \
-  --output output/qualitative/tiil
+python scripts/run_experiment.py configs/vqa_x.yaml \
+  --integration integrations.vqax:build \
+  --device cuda \
+  --output results/vqa_x
 ```
 
-## Figures
+The runner executes all seeds declared in the task configuration and writes one JSONL file per seed.
 
-```bash
-for task in vqax mhaldetect tiil; do
-  python scripts/select_qualitative_examples.py \
-    output/qualitative/${task}/manifest.json \
-    --output output/qualitative/${task}/selection.json \
-    --count 8
-done
+## Model integration
 
-python scripts/build_qualitative_pdf.py \
-  --root output/qualitative \
-  --output output/pdf/pmesa_qualitative_results.pdf
+Implement `PMESAAdapter.prepare` for the target model. It must return:
+
+- visual and textual primitive evidence;
+- relation units whose `endpoints` reference primitive unit IDs;
+- one differentiable scalar score accepting only primitive restoration gates;
+- one saliency value per primitive or relation unit.
+
+The integration module passed to `run_experiment.py` also supplies the official dataset iterator, example IDs, categories, and task metrics through the `ExperimentIntegration` interface.
+
+The core never creates a synthetic relation input. Relation contribution is computed from the four endpoint restoration states in Eq. (5).
+
+```python
+from pmesa import PMESAExplainer
+
+prepared = adapter.prepare(example)
+explanation = PMESAExplainer(
+    steps=50,
+    path_count=6,
+    budget=5,
+    seed=17,
+).explain(prepared.units, prepared.score, prepared.saliency)
 ```
 
-Each input and method panel is stored as an individual `960x600` JPEG. Raw
-attribution arrays, manifests, and the combined PDF are written to `output/`.
-Dataset and model sources are listed in
-[`docs/METHOD_SOURCES.md`](docs/METHOD_SOURCES.md).
+SAM mask filtering, phrase construction, Eq. (1) multimodal saliency, sparse relation construction, target scores, evidence matching, metrics, and JSON serialization are provided under `src/pmesa/`.
+`GatedMultimodalScore` combines image-region and text-phrase gates into the partially restored input evaluated by the frozen target model.
 
-Qualitative baselines use 32-step trapezoidal Integrated Gradients and
-SmoothGrad-IG with 8 noise samples and 16 integration steps. RISE uses 48 masks
-for these qualitative panels; increase its mask budget for aggregate benchmark
-reporting.
-
-## Test
+## Verification
 
 ```bash
 pytest -q
+pmesa demo --output outputs/demo/explanation.json
 ```
 
 ## License

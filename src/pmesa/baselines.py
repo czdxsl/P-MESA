@@ -35,7 +35,12 @@ def low_evidence_image(image: torch.Tensor, *, downsample_factor: int = 16, blur
     return restored.squeeze(0) if squeeze else restored
 
 
-def restore_regions(baseline: torch.Tensor, original: torch.Tensor, masks: torch.Tensor, gates: torch.Tensor) -> torch.Tensor:
+def restore_regions(
+    baseline: torch.Tensor,
+    original: torch.Tensor,
+    masks: torch.Tensor,
+    gates: torch.Tensor,
+) -> torch.Tensor:
     """Softly restore possibly-overlapping region masks.
 
     Alpha union avoids values above one where masks overlap.
@@ -46,3 +51,24 @@ def restore_regions(baseline: torch.Tensor, original: torch.Tensor, masks: torch
     gates = gates.to(device=original.device, dtype=original.dtype)
     alpha = 1.0 - torch.prod(1.0 - masks * gates.view(-1, 1, 1), dim=0)
     return baseline * (1.0 - alpha) + original * alpha
+
+
+def weaken_text_embeddings(
+    original: torch.Tensor,
+    weakened: torch.Tensor,
+    token_groups: list[list[int]],
+    gates: torch.Tensor,
+) -> torch.Tensor:
+    """Restore content-bearing phrase embeddings from a weakened text state."""
+    if original.shape != weakened.shape:
+        raise ValueError("original and weakened text embeddings must match")
+    if len(token_groups) != gates.numel():
+        raise ValueError("one restoration gate is required per textual phrase")
+    output = weakened.clone()
+    for gate, group in zip(gates, token_groups):
+        if not group:
+            raise ValueError("textual phrase groups cannot be empty")
+        output[..., group, :] = weakened[..., group, :] + gate * (
+            original[..., group, :] - weakened[..., group, :]
+        )
+    return output

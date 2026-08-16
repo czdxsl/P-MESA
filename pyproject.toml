@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pmesa"
-version = "0.1.0"
+version = "1.0.0"
 description = "Path-Guided Multimodal Evidence Subset Attribution"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -16,11 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-experiments = [
-  "reportlab>=4",
-  "requests>=2.28",
-  "transformers>=4.35",
-]
+experiments = ["transformers>=4.38", "timm>=0.9", "spacy>=3.7"]
 dev = ["pytest>=7", "pytest-cov>=4"]
 
 [project.scripts]

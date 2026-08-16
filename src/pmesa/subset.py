@@ -23,14 +23,6 @@ class ObjectiveWeights:
             raise ValueError("objective weights must be non-negative")
 
 
-def minmax(values: Sequence[float]) -> np.ndarray:
-    x = np.asarray(values, dtype=float)
-    if x.size == 0:
-        return x
-    lo, hi = float(x.min()), float(x.max())
-    return np.zeros_like(x) if hi - lo <= 1e-12 else (x - lo) / (hi - lo)
-
-
 class SubsetObjective:
     def __init__(
         self,
@@ -42,6 +34,7 @@ class SubsetObjective:
         weights: ObjectiveWeights = ObjectiveWeights(),
         relation_caps: Mapping[str, float] | None = None,
         normalize: bool = True,
+        budget: int | None = None,
     ) -> None:
         n = len(units)
         if not (len(contribution) == len(saliency) == len(stability) == n):
@@ -50,14 +43,13 @@ class SubsetObjective:
         self.contribution = np.maximum(np.asarray(contribution, dtype=float), 0.0)
         self.saliency = np.maximum(np.asarray(saliency, dtype=float), 0.0)
         self.stability = np.maximum(np.asarray(stability, dtype=float), 0.0)
-        if normalize:
-            self.contribution = minmax(self.contribution)
-            self.saliency = minmax(self.saliency)
-            self.stability = minmax(self.stability)
         self.weights = weights
         self.relation_caps = dict(relation_caps or {})
+        self.normalize = normalize
+        self.budget = n if budget is None else min(max(int(budget), 0), n)
+        self._normalizers = self._component_normalizers()
 
-    def components(self, selected: Sequence[int]) -> tuple[float, float, float, float]:
+    def raw_components(self, selected: Sequence[int]) -> tuple[float, float, float, float]:
         selected = list(selected)
         con = log1p(float(self.contribution[selected].sum())) if selected else 0.0
         sal = log1p(float(self.saliency[selected].sum())) if selected else 0.0
@@ -72,6 +64,22 @@ class SubsetObjective:
         cov += sum(min(self.relation_caps.get(key, 1.0), value) for key, value in relations.items())
         stab = float(self.stability[selected].sum()) if selected else 0.0
         return con, sal, cov, stab
+
+    def _component_normalizers(self) -> np.ndarray:
+        if not self.normalize:
+            return np.ones(4, dtype=float)
+        if self.budget == 0:
+            return np.ones(4, dtype=float)
+        con = log1p(float(np.sort(self.contribution)[-self.budget:].sum()))
+        sal = log1p(float(np.sort(self.saliency)[-self.budget:].sum()))
+        stab = float(np.sort(self.stability)[-self.budget:].sum())
+        cov = self.raw_components(range(len(self.units)))[2]
+        values = np.asarray((con, sal, cov, stab), dtype=float)
+        return np.where(values > 1e-12, values, 1.0)
+
+    def components(self, selected: Sequence[int]) -> tuple[float, float, float, float]:
+        values = np.asarray(self.raw_components(selected), dtype=float) / self._normalizers
+        return tuple(float(value) for value in values)
 
     def __call__(self, selected: Sequence[int]) -> float:
         c = self.components(selected)

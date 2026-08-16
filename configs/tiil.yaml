@@ -1,14 +1,22 @@
-task: inconsistency_detection
+task: inconsistency
 dataset:
   name: TIIL
   root: data/tiil
   split: test
-model:
-  name: openai/clip-vit-base-patch32
-target_score: original_minus_falsified_phrase_similarity
+target_model:
+  architecture: ALBEF-ITM
+  checkpoint: checkpoints/albef_itm.pth
+target_score: image_text_inconsistency_score
 evidence:
-  visual: 6x6_restoration_grid
-  textual: minimal_changed_phrases
-  relation: contrastive_difference
-pmesa: {paths: 2, budget: 6, seed: 4242, baseline: blur}
-evaluation: [insertion_auc, deletion_auc, sufficiency, comprehensiveness, miou, span_f1, stability]
+  visual: segment_anything
+  visual_fallback: vit_patches
+  textual: semantic_phrases
+  relation_types: [contradiction, support]
+pmesa:
+  integration_points: 50
+  restoration_paths: 6
+  evidence_budget: 5
+  relation_top_k: 3
+  objective_weights: {contribution: 1.0, saliency: 1.0, coverage: 1.0, stability: 1.0}
+  seeds: [17, 23, 42]
+evaluation: [insertion_auc, deletion_auc, sufficiency, comprehensiveness, miou, word_f1, stability]

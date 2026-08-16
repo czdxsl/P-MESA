@@ -20,3 +20,9 @@ def test_objective_is_monotone_for_nonnegative_inputs():
     units = [EvidenceUnit(str(i), EvidenceKind.VISUAL, str(i), {str(i): 1}) for i in range(4)]
     objective = SubsetObjective(units, [1, 2, 3, 4], [4, 3, 2, 1], [1, 1, 1, 1])
     assert objective([0, 1, 2]) >= objective([0, 1]) >= objective([0]) >= objective([])
+
+
+def test_normalized_components_are_bounded_for_feasible_subsets():
+    units = [EvidenceUnit(str(i), EvidenceKind.VISUAL, str(i), {str(i): 1}) for i in range(4)]
+    objective = SubsetObjective(units, [1, 2, 3, 4], [4, 3, 2, 1], [1, 1, 1, 1], budget=2)
+    assert all(0 <= value <= 1 for value in objective.components([2, 3]))
